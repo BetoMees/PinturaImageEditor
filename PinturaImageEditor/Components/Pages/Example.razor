@@ -1,0 +1,80 @@
+﻿@using PinturaImageEditor.Components.Component
+@using PinturaImageEditor.Data
+@using PinturaImageEditor.Services
+@using static PinturaImageEditor.Components.Dialog.DialogImageEditor
+@using static PinturaImageEditor.Data.ArchiveModel
+<h3>Pintura Example</h3>
+<RadzenRow>
+
+	<RadzenColumn Size="12">
+		<RadzenRow>
+			@foreach (var item in _Archives.Where(s => s.Status != EArchiveStatus.Deleted))
+			{
+				<RadzenColumn Size="12" SizeSM="3">
+					<ImgCard Img="item" OnEdit="EditImage" OnRemove="RemoveImg" />
+				</RadzenColumn>
+			}
+		</RadzenRow>
+	</RadzenColumn>
+</RadzenRow>
+@code {
+	List<ArchiveModel> _Archives { get; set; }
+	[Inject] IJSRuntime JS { get; set; }
+	[Inject] CoreDbContext DB { get; set; }
+	[Inject] DialogService DialogService { get; set; }
+	[Inject] ArchiveService ArchiveService { get; set; }
+
+	protected override async Task OnInitializedAsync()
+	{
+		await base.OnInitializedAsync();
+		_Archives = DB.Archive.ToList();
+		StateHasChanged();
+	}
+	async Task SaveArchives()
+	{
+		foreach (var item in _Archives.Where(s => s.Status != EArchiveStatus.Normal).ToList())
+		{
+			await ArchiveService.SaveArchive(item);
+			if (item.Status == EArchiveStatus.New)
+			{
+				_Archives.Add(item);
+			}
+			else if (item.Status == EArchiveStatus.Deleted)
+			{
+				_Archives.Remove(item);
+			}
+			if (item.Status != EArchiveStatus.Deleted)
+			{
+				item.Status = EArchiveStatus.Normal;
+			}
+		};
+	}
+	void AddImage(DialogImageResult img)
+	{
+		_Archives.Add(new ArchiveModel() { Url = img.Url, Name = img.Name, Status = EArchiveStatus.New });
+	}
+
+	async void EditImage(ImgCard.ImgCardEvent item)
+	{
+		if (item.Img.Url.StartsWith("blob"))
+		{
+			await JS.InvokeVoidAsync("URL.revokeObjectURL", item.Img.Url);
+		}
+		else if (String.IsNullOrEmpty(item.Img.Url))
+		{
+			item.Img.OldUrl = item.Img.Url;
+			item.Img.Status = EArchiveStatus.Edited;
+		}
+		item.Img.Url = item.Data.Url;
+		StateHasChanged();
+	}
+	async void RemoveImg(ArchiveModel item)
+	{
+		var result = await DialogService.Confirm("Tem certeza que deseja remover imagem?");
+		if (result == true)
+		{
+			item.Status = EArchiveStatus.Deleted;
+			StateHasChanged();
+		}
+	}
+}

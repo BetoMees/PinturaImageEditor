@@ -1,0 +1,64 @@
+﻿@inject DialogService DialogService
+@inject Logger<DialogImageEditor> Logger
+@inject IJSRuntime JS
+@using Microsoft.JSInterop
+
+<div @ref="divElement" style="height: 300px;min-width: 20em;min-height: 40em;"></div>
+
+@code {
+	//// <summary>
+	/// Gets the image from a Blob url or link
+	/// </summary>
+	[Parameter] public string? Src { get; set; }
+	/// <summary>
+	/// Gets the ElementReference from an input to enter the image
+	/// </summary>
+	[Parameter] public ElementReference? ElementID { get; set; }
+	ElementReference divElement { get; set; }
+	private DotNetObjectReference<DialogImageEditor>? reference;
+
+	/// <summary>
+	/// Gets the reference for the current component.
+	/// </summary>
+	/// <value>The reference.</value>
+	protected DotNetObjectReference<DialogImageEditor> Reference
+	{
+		get
+		{
+			if (reference == null)
+			{
+				reference = DotNetObjectReference.Create(this);
+			}
+
+			return reference;
+		}
+	}
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			if (Src is not null)
+				await JS.InvokeVoidAsync("ImageEditor.Open", Src, divElement, Reference);
+			else if (ElementID is not null)
+				await JS.InvokeVoidAsync("ImageEditor.OpenByElement", ElementID, divElement, Reference);
+			else
+			{
+				Logger.LogError("--Url and ElementID nulls--");
+				DialogService.Close();
+			}
+		}
+
+	}
+
+	[JSInvokable("DialogImageEditor.OnSave")]
+	public void OnSave(DialogImageResult obj)
+	{
+		DialogService.Close(obj);
+	}
+
+	public class DialogImageResult
+	{
+		public string Url { get; set; }
+		public string Name { get; set; }
+	}
+}
