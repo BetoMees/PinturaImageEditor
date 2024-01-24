@@ -1,0 +1,13 @@
+﻿@using PinturaImageEditor.Services
+@inject NavigationManager NavigationManager
+@inject ThemeService ThemeService
+
+<link href="@ThemeService.CurrentThemeUrl" rel="stylesheet" />
+
+@code {
+
+	protected override void OnInitialized()
+	{
+		ThemeService.Initialize(NavigationManager);
+	}
+}

@@ -1,11 +1,15 @@
-﻿@using PinturaImageEditor.Components.Component
+﻿@page "/example"
+@using PinturaImageEditor.Components.Component
 @using PinturaImageEditor.Data
 @using PinturaImageEditor.Services
 @using static PinturaImageEditor.Components.Dialog.DialogImageEditor
 @using static PinturaImageEditor.Data.ArchiveModel
 <h3>Pintura Example</h3>
+<RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Start" class="rz-mb-5">
+	<ImageSelect Text="Select Image" OnSave="AddImage" />
+	<RadzenButton Click="@Save" Variant="Variant.Flat" Text="Save" Style="width: 120px" IsBusy="@_Saving" Disabled="@(!_Savable)" BusyText="Saving..." />
+</RadzenStack>
 <RadzenRow>
-
 	<RadzenColumn Size="12">
 		<RadzenRow>
 			@foreach (var item in _Archives.Where(s => s.Status != EArchiveStatus.Deleted))
@@ -18,11 +22,14 @@
 	</RadzenColumn>
 </RadzenRow>
 @code {
-	List<ArchiveModel> _Archives { get; set; }
 	[Inject] IJSRuntime JS { get; set; }
 	[Inject] CoreDbContext DB { get; set; }
 	[Inject] DialogService DialogService { get; set; }
 	[Inject] ArchiveService ArchiveService { get; set; }
+	[Inject] NotificationService NotificationService { get; set; }
+	List<ArchiveModel> _Archives { get; set; }
+	bool _Saving { get; set; } = false;
+	bool _Savable { get => _Archives.Where(s => s.Status != EArchiveStatus.Normal).Any(); }
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -30,24 +37,50 @@
 		_Archives = DB.Archive.ToList();
 		StateHasChanged();
 	}
-	async Task SaveArchives()
+	async Task Save()
 	{
-		foreach (var item in _Archives.Where(s => s.Status != EArchiveStatus.Normal).ToList())
+		_Saving = true;
+		try
 		{
-			await ArchiveService.SaveArchive(item);
-			if (item.Status == EArchiveStatus.New)
+			List<ArchiveResult> erroList = new List<ArchiveResult>();
+			foreach (var item in _Archives.Where(s => s.Status != EArchiveStatus.Normal).ToList())
 			{
-				_Archives.Add(item);
-			}
-			else if (item.Status == EArchiveStatus.Deleted)
+				var result = await ArchiveService.SaveArchive(item);
+				if (result.Success)
+				{
+					if (item.Status == EArchiveStatus.New)
+					{
+						DB.Archive.Add(item);
+					}
+					else if (item.Status == EArchiveStatus.Deleted)
+					{
+						_Archives.Remove(item);
+						if (item.Id != 0)
+						{
+							DB.Archive.Remove(item);
+						}
+					}
+				}
+				else
+				{
+					erroList.Add(result);
+				}
+			};
+			if (erroList.Any())
 			{
-				_Archives.Remove(item);
+				var result = await DialogService.Alert(string.Join('\n', erroList), "Error");
+				return;
 			}
-			if (item.Status != EArchiveStatus.Deleted)
-			{
-				item.Status = EArchiveStatus.Normal;
-			}
-		};
+			await DB.SaveChangesAsync();
+
+			_Archives.Update(s => s.Status = EArchiveStatus.Normal);
+			NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success", Detail = $"Images saved successfully!!", Duration = 3000 });
+		}
+		catch (Exception ex)
+		{
+			var result = await DialogService.Alert(ex.Message);
+		}
+		_Saving = false;
 	}
 	void AddImage(DialogImageResult img)
 	{
@@ -60,7 +93,7 @@
 		{
 			await JS.InvokeVoidAsync("URL.revokeObjectURL", item.Img.Url);
 		}
-		else if (String.IsNullOrEmpty(item.Img.Url))
+		else if (String.IsNullOrEmpty(item.Img.OldUrl))
 		{
 			item.Img.OldUrl = item.Img.Url;
 			item.Img.Status = EArchiveStatus.Edited;
@@ -70,7 +103,7 @@
 	}
 	async void RemoveImg(ArchiveModel item)
 	{
-		var result = await DialogService.Confirm("Tem certeza que deseja remover imagem?");
+		var result = await DialogService.Confirm("Are you sure you want to remote this image?");
 		if (result == true)
 		{
 			item.Status = EArchiveStatus.Deleted;

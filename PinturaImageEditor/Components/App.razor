@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@using PinturaImageEditor.Components.Component
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -9,7 +10,8 @@
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="PinturaImageEditor.styles.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
-    <link rel="stylesheet" href="_content/Radzen.Blazor/css/material-base.css">
+    <Theme @rendermode="InteractiveServer"/>
+    <link rel="stylesheet" href="/PinturaJS/pintura.css" />
     <HeadOutlet @rendermode="InteractiveServer" />
 </head>
 

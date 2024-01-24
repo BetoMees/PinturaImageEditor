@@ -173,7 +173,7 @@ else
 		DialogImageResult dialogResult = await DialogService.OpenAsync<DialogImageEditor>("",
 			new Dictionary<string, object?>() { { "ElementID", input } },
 			new DialogOptions() { });
-		if (dialogResult.Name != null && dialogResult.Url != null)
+		if (dialogResult?.Name != null && dialogResult?.Url != null)
 		{
 			await OnSave.InvokeAsync(dialogResult);
 		}
@@ -185,7 +185,7 @@ else
 		DialogImageResult dialogResult = await DialogService.OpenAsync<DialogImageEditor>("",
 			new Dictionary<string, object?>() { { "Src", Src } },
 			new DialogOptions() { });
-		if (dialogResult.Name != null && dialogResult.Url != null)
+		if (dialogResult?.Name != null && dialogResult?.Url != null)
 		{
 			await OnSave.InvokeAsync(dialogResult);
 		}

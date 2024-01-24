@@ -4,11 +4,12 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Security.Cryptography;
 using System.Text;
+using System.Xml.Linq;
 using static PinturaImageEditor.Data.ArchiveModel;
 
 namespace PinturaImageEditor.Services
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "<Pending>")]
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "<Pending>")]
 	public class ArchiveService(ILogger<ArchiveService> logger, IJSRuntime js, IWebHostEnvironment env)
 	{
 		ILogger<ArchiveService> Logger = logger;
@@ -17,6 +18,7 @@ namespace PinturaImageEditor.Services
 
 		const string ImagesFolder = "/Images/";
 		const int bufferSize = 32256;
+		const long maxAllowedSize = 1024 * 1024 * 5;
 		ImageFormat imageFormat = ImageFormat.Png;
 
 		static string GetMD5(byte[] bytes)
@@ -27,7 +29,6 @@ namespace PinturaImageEditor.Services
 				.ToLower();
 			return checksum;
 		}
-
 		async Task<string> SaveNewImg(string UrlBlob)
 		{
 			if (!UrlBlob.StartsWith("blob"))
@@ -35,7 +36,7 @@ namespace PinturaImageEditor.Services
 				throw new Exception("Your url must be Blob URL");
 			}
 			var _jsStreamReference = await JS.InvokeAsync<IJSStreamReference>("ImageEditor.GetBlobFromUrlBlob", UrlBlob);
-			var stream = await _jsStreamReference.OpenReadStreamAsync();
+			var stream = await _jsStreamReference.OpenReadStreamAsync(maxAllowedSize);
 			MemoryStream ms = new MemoryStream(Convert.ToInt32(stream.Length));
 			var buffer = new byte[bufferSize];
 			int bytesRead;
@@ -53,7 +54,6 @@ namespace PinturaImageEditor.Services
 
 			var md5Name = GetMD5(ms.GetBuffer());
 
-
 			String ImageDiretorio = Path.Combine(ImagesFolder, md5Name + "." + imageFormat.ToString());
 			img.Save(Env.WebRootPath + ImageDiretorio, imageFormat);
 			return ImageDiretorio;
@@ -61,20 +61,17 @@ namespace PinturaImageEditor.Services
 
 		async Task SaveEditedImg(ArchiveModel item)
 		{
-			try
-			{
-				item.Url = await SaveNewImg(item.Url);
-				DeleteImg(item.OldUrl);
-				item.OldUrl = String.Empty;
-			}
-			catch (Exception ex)
-			{
-				Logger.LogError(ex, "Could not save archive url: " + item.Url);
-			}
+			item.Url = await SaveNewImg(item.Url);
+			DeleteImg(item.OldUrl);
+			item.OldUrl = String.Empty;
 		}
 
 		void DeleteImg(string name)
 		{
+			if (name.StartsWith("blob"))
+			{
+				return;
+			}
 			string fileName = Env.WebRootPath + name;
 			if (File.Exists(fileName))
 			{
@@ -86,20 +83,35 @@ namespace PinturaImageEditor.Services
 			}
 		}
 
-		public async Task SaveArchive(ArchiveModel item)
+		public async Task<ArchiveResult> SaveArchive(ArchiveModel item)
 		{
-			switch (item.Status)
+			try
 			{
-				case EArchiveStatus.New:
-					item.Url = await SaveNewImg(item.Url);
-					break;
-				case EArchiveStatus.Edited:
-					await SaveEditedImg(item);
-					break;
-				case EArchiveStatus.Deleted:
-					DeleteImg(item.Url);
-					break;
+				switch (item.Status)
+				{
+					case EArchiveStatus.New:
+						item.Url = await SaveNewImg(item.Url);
+						break;
+					case EArchiveStatus.Edited:
+						await SaveEditedImg(item);
+						break;
+					case EArchiveStatus.Deleted:
+						var name = string.IsNullOrEmpty(item.OldUrl) ? item.Url : item.OldUrl;
+						DeleteImg(name);
+						break;
+				}
 			}
+			catch (Exception ex)
+			{
+				Logger.LogError(ex, item.ToString());
+				return new() { Success = false, Message = ex.Message };
+			}
+			return new();
 		}
+	}
+	public class ArchiveResult
+	{
+		public bool Success { get; set; } = true;
+		public string? Message { get; set; }
 	}
 }

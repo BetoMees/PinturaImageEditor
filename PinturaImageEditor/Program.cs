@@ -23,8 +23,9 @@ namespace PinturaImageEditor
 
 			builder.Services.AddRadzenComponents();
 			builder.Services.AddScoped<ArchiveService>();
+			builder.Services.AddScoped<ThemeService>();
 
-			var app = builder.Build();
+            var app = builder.Build();
 
 			// Configure the HTTP request pipeline.
 			if (!app.Environment.IsDevelopment())

@@ -1,12 +1,53 @@
-﻿@inherits LayoutComponentBase
+﻿@using PinturaImageEditor.Services
+@inherits LayoutComponentBase
+@inject ThemeService ThemeService
+@inject NavigationManager UriHelper
 
 <RadzenComponents />
 <RadzenLayout>
     <RadzenHeader>
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
-            <RadzenSidebarToggle Click="@(() => sidebar1Expanded = !sidebar1Expanded)" />
-            <RadzenLabel Text="Header" />
-        </RadzenStack>
+        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Start" Gap="0px">
+            <RadzenColumn Size="5">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                    <RadzenSidebarToggle Click="@(() => sidebar1Expanded = !sidebar1Expanded)" />
+                    <RadzenLabel Text="Header" />
+                </RadzenStack>
+            </RadzenColumn>
+            <RadzenColumn Size="7">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End">
+                    <RadzenDropDown Class="rz-mx-0 rz-mx-lg-4 rz-mr-3" id="themes" style="width: 220px;" TValue="string" TextProperty="Text" ValueProperty="Value" Data="@ThemeService.Themes" Value="@ThemeService.CurrentTheme" Change="@ChangeTheme">
+                        <ValueTemplate>
+                            @context.Text Theme
+                        </ValueTemplate>
+                        <Template>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                                <svg width="80" height="60" viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius: 4px; overflow: hidden; outline: var(--rz-border-disabled); min-width: 80px;">
+                                    <rect width="80" height="60" fill="@context.Base" />
+                                    <rect x="0" y="4" width="16" height="56" fill="@context.Sidebar" />
+                                    <rect x="24" y="17" width="48" height="32" rx="2" fill="@context.Content" />
+                                    <rect x="43" y="41" width="12" height="4" rx="1" fill="@context.Secondary" />
+                                    <rect x="28" y="21" width="16" height="2" rx="1" fill="@context.TitleText" />
+                                    <rect x="28" y="27" width="40" height="2" rx="1" fill="@context.ContentText" />
+                                    <rect x="28" y="31" width="40" height="2" rx="1" fill="@context.ContentText" />
+                                    <rect x="28" y="35" width="16" height="2" rx="1" fill="@context.ContentText" />
+                                    <rect x="28" y="41" width="12" height="4" rx="1" fill="@context.Primary" />
+                                    <rect width="80" height="6" fill="@context.Header" />
+                                </svg>
+                                @context.Text
+                                @if (context.Premium)
+                                {
+                                    <RadzenBadge title="To use it in your application you need an active Radzen Professional or Enterprise subscription." Shade="Shade.Light">PRO</RadzenBadge>
+                                }
+                                else
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Shade="Shade.Lighter">FREE</RadzenBadge>
+                                }
+                            </RadzenStack>
+                        </Template>
+                    </RadzenDropDown>
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
     </RadzenHeader>
     <RadzenSidebar @bind-Expanded="@sidebar1Expanded">
         <RadzenPanelMenu>
@@ -26,4 +67,15 @@
 
 @code {
     bool sidebar1Expanded = true;
+
+    void ChangeTheme(object value)
+    {
+        if(value is string theme)
+        {
+            ThemeService.Change(theme);
+        }
+        var url = UriHelper.GetUriWithQueryParameter("theme", $"{value}");
+
+        UriHelper.NavigateTo(url, true);
+    }
 }
