@@ -14,7 +14,7 @@
 		<RadzenRow>
 			@foreach (var item in _Archives.Where(s => s.Status != EArchiveStatus.Deleted))
 			{
-				<RadzenColumn Size="12" SizeSM="3">
+				<RadzenColumn Size="12" SizeXS="3">
 					<ImgCard Img="item" OnEdit="EditImage" OnRemove="RemoveImg" />
 				</RadzenColumn>
 			}

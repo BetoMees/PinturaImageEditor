@@ -1,29 +1,20 @@
 ﻿@using PinturaImageEditor.Data
 @using static PinturaImageEditor.Components.Dialog.DialogImageEditor
-<style>
-	.card-img-hover .img-btn {
-		opacity: 0;
-		transition: all 1s;
-	}
-
-	.card-img-hover:hover .img-btn {
-		opacity: 1;
-	}
-</style>
-
-<RadzenCard Style="@GetStyle(Img.Url)" class="card-img-hover">
-	<RadzenStack Style="position: absolute;" class="img-btn" Orientation="Orientation.Horizontal">
-		<ImageSelect Src="@Img.Url" Icon="edit" OnSave="((s) => OnEdit.InvokeAsync(new ImgCardEvent() { Img = Img, Data = s }))" Size="ButtonSize.ExtraSmall" />
-		<RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.ExtraSmall" Click="(() => OnRemove.InvokeAsync(Img))" />
-	</RadzenStack>
-</RadzenCard>
+<div>
+	<RadzenCard Style="@GetStyle(Img.Url)" class="card-img-hover">
+		<RadzenStack Style="position: absolute;" class="img-btn" Orientation="Orientation.Horizontal">
+			<ImageSelect Src="@Img.Url" Icon="edit" OnSave="((s) => OnEdit.InvokeAsync(new ImgCardEvent() { Img = Img, Data = s }))" Size="ButtonSize.ExtraSmall" />
+			<RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.ExtraSmall" Click="(() => OnRemove.InvokeAsync(Img))" />
+		</RadzenStack>
+	</RadzenCard>
+</div>
 @code {
 	[Parameter] public ArchiveModel Img { get; set; }
 	[Parameter] public EventCallback<ImgCardEvent> OnEdit { get; set; }
 	[Parameter] public EventCallback<ArchiveModel> OnRemove { get; set; }
 	string GetStyle(string url)
 	{
-		return $"background-image: url({url});background-position: center;background-repeat: no-repeat;background-size: cover; height: 10vw;";
+		return $"background-image: url({url});";
 	}
 
 

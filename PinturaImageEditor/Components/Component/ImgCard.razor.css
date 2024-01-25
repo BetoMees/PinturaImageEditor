@@ -1,0 +1,26 @@
+﻿::deep .card-img-hover {
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    height: 10vw;
+}
+
+    ::deep .card-img-hover .img-btn {
+        opacity: 0;
+        transition: all 1s;
+    }
+
+    ::deep .card-img-hover:hover .img-btn {
+        opacity: 1;
+    }
+
+
+@media (max-width: 575px) {
+    ::deep .card-img-hover {
+        height: 20vh;
+    }
+
+        ::deep .card-img-hover .img-btn {
+            opacity: 1;
+        }
+}
