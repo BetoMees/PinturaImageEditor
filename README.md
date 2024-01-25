@@ -5,6 +5,5 @@
 
 This project is an example of how to integrate the Pintura Image Editor into a Blazor project with Radzen Components
 
-![Example View](images/Example_1.png)
-![Pintura View](images/Example_2.png)
-
+![Example View](https://github.com/BetoMees/PinturaImageEditor/blob/master/Images/Example_1.png)
+![Pintura View](https://github.com/BetoMees/PinturaImageEditor/blob/master/Images/Example_2.png)
